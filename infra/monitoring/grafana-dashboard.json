@@ -1,0 +1,189 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Nexus Arena — Game Server Monitoring",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Active Rooms",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "active_rooms",
+          "legendFormat": "Rooms"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Active Players",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "active_players",
+          "legendFormat": "Players"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Socket Events / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(socket_events_total[1m])",
+          "legendFormat": "{{ event }}"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Duration (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m]))",
+          "legendFormat": "p95 Latency (ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.50, rate(http_request_duration_ms_bucket[5m]))",
+          "legendFormat": "p50 Latency (ms)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      }
+    },
+    {
+      "title": "Game Tick Duration",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, rate(game_tick_duration_ms_bucket[5m]))",
+          "legendFormat": "p99 Tick (ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.50, rate(game_tick_duration_ms_bucket[5m]))",
+          "legendFormat": "p50 Tick (ms)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "HTTP Request Rate by Route",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_ms_count[5m])) by (route, method)",
+          "legendFormat": "{{ method }} {{ route }}"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Error Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_ms_count{status_code=~\"5..\"}[5m]))",
+          "legendFormat": "5xx errors/sec"
+        },
+        {
+          "expr": "sum(rate(http_request_duration_ms_count{status_code=~\"4..\"}[5m]))",
+          "legendFormat": "4xx errors/sec"
+        }
+      ]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"nexus-arena-backend\"} / 1024 / 1024",
+          "legendFormat": "RSS (MB) - {{ pod }}"
+        },
+        {
+          "expr": "nodejs_heap_size_used_bytes{job=\"nexus-arena-backend\"} / 1024 / 1024",
+          "legendFormat": "Heap Used (MB) - {{ pod }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes"
+        }
+      }
+    },
+    {
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 18 },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total{job=\"nexus-arena-backend\"}[5m]) * 100",
+          "legendFormat": "CPU % - {{ pod }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["nexus-arena", "game", "backend"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Nexus Arena — Game Server Dashboard",
+  "uid": "nexus-arena-dashboard",
+  "version": 1
+}

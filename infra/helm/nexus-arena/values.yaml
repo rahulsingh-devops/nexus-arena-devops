@@ -1,0 +1,75 @@
+# Nexus Arena Helm Values — Development Defaults
+
+replicaCount:
+  backend: 1
+  frontend: 1
+
+image:
+  backend:
+    repository: nexus-arena-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: nexus-arena-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+service:
+  backend:
+    type: ClusterIP
+    port: 3001
+  frontend:
+    type: ClusterIP
+    port: 5173
+
+ingress:
+  enabled: true
+  className: nginx
+  host: nexus-arena.example.com
+  tls:
+    enabled: false
+    secretName: nexus-arena-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+backend:
+  env:
+    NODE_ENV: development
+    PORT: "3001"
+    CORS_ORIGIN: http://localhost:5173
+
+secrets:
+  jwtSecret: nexus-arena-dev-secret
+  databaseUrl: postgresql://nexus:nexus@nexus-redis:5432/nexusarena
+  redisUrl: redis://nexus-redis:6379
+
+resources:
+  backend:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  frontend:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPU: 60
+  targetMemory: 75
+
+redis:
+  enabled: true
+  maxMemory: 128mb
+
+monitoring:
+  enabled: false

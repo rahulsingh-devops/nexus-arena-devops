@@ -1,0 +1,106 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nexus-network-policy
+  namespace: nexus-arena
+spec:
+  # Default deny all ingress
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+
+---
+# Allow ingress to frontend from anywhere (public)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-ingress
+  namespace: nexus-arena
+spec:
+  podSelector:
+    matchLabels:
+      app: nexus-frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 5173
+
+---
+# Allow ingress to backend from frontend and ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-ingress
+  namespace: nexus-arena
+spec:
+  podSelector:
+    matchLabels:
+      app: nexus-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: nexus-frontend
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 3001
+
+---
+# Allow backend to reach Redis and PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-egress
+  namespace: nexus-arena
+spec:
+  podSelector:
+    matchLabels:
+      app: nexus-backend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: nexus-redis
+      ports:
+        - port: 6379
+    - to: []  # Allow external DB connections (RDS/CloudSQL)
+      ports:
+        - port: 5432
+    # Allow DNS
+    - to: []
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Allow Redis ingress from backend only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-ingress
+  namespace: nexus-arena
+spec:
+  podSelector:
+    matchLabels:
+      app: nexus-redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: nexus-backend
+      ports:
+        - port: 6379

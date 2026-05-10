@@ -1,0 +1,64 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexus-ingress
+  namespace: nexus-arena
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    # WebSocket support for Socket.IO
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    # TLS with cert-manager
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - nexus-arena.example.com
+      secretName: nexus-arena-tls
+  rules:
+    - host: nexus-arena.example.com
+      http:
+        paths:
+          # Backend API + Socket.IO
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus-backend
+                port:
+                  number: 3001
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus-backend
+                port:
+                  number: 3001
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: nexus-backend
+                port:
+                  number: 3001
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: nexus-backend
+                port:
+                  number: 3001
+          # Frontend (catch-all)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus-frontend
+                port:
+                  number: 5173

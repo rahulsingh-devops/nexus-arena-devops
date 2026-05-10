@@ -1,0 +1,50 @@
+# Nexus Arena Helm Values — Production Overrides
+
+replicaCount:
+  backend: 2
+  frontend: 2
+
+image:
+  backend:
+    pullPolicy: Always
+  frontend:
+    pullPolicy: Always
+
+ingress:
+  tls:
+    enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+backend:
+  env:
+    NODE_ENV: production
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPU: 60
+  targetMemory: 75
+
+resources:
+  backend:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  frontend:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+redis:
+  maxMemory: 512mb
+
+monitoring:
+  enabled: true

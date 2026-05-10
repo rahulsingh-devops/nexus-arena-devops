@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-frontend
+  namespace: nexus-arena
+  labels:
+    app: nexus-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: nexus-frontend
+  ports:
+    - name: http
+      port: 5173
+      targetPort: 5173
+      protocol: TCP

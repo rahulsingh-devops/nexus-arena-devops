@@ -1,0 +1,108 @@
+name: CD — Build, Push, Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # OIDC for AWS
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_BACKEND: nexus-arena-backend
+  ECR_FRONTEND: nexus-arena-frontend
+  EKS_CLUSTER: nexus-arena-cluster
+  HELM_RELEASE: nexus-arena
+  NAMESPACE: nexus-arena
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- AWS Auth (OIDC) ----
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ---- Build & Push Backend ----
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_BACKEND }}:${{ github.sha }}
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_BACKEND }}:latest
+
+      # ---- Build & Push Frontend ----
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: frontend
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_FRONTEND }}:${{ github.sha }}
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_FRONTEND }}:latest
+
+      # ---- Deploy to EKS ----
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Helm upgrade
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE }} \
+            infra/helm/nexus-arena \
+            --namespace ${{ env.NAMESPACE }} \
+            --create-namespace \
+            -f infra/helm/nexus-arena/values.prod.yaml \
+            --set image.backend.repository=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_BACKEND }} \
+            --set image.backend.tag=${{ github.sha }} \
+            --set image.frontend.repository=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_FRONTEND }} \
+            --set image.frontend.tag=${{ github.sha }} \
+            --set secrets.jwtSecret=${{ secrets.JWT_SECRET }} \
+            --set secrets.databaseUrl=${{ secrets.DATABASE_URL }} \
+            --set secrets.redisUrl=${{ secrets.REDIS_URL }} \
+            --wait \
+            --timeout 5m
+
+      # ---- Smoke Test ----
+      - name: Smoke test
+        run: |
+          BACKEND_URL=$(kubectl get ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')
+          echo "Backend URL: $BACKEND_URL"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://$BACKEND_URL/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "⏳ Attempt $i: status $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
+
+      # ---- Notification ----
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "🚀 Nexus Arena deployed successfully (commit: ${{ github.sha }})"
+          else
+            echo "⚠️ Nexus Arena deployment failed (commit: ${{ github.sha }})"
+          fi

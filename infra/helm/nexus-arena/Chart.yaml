@@ -1,0 +1,13 @@
+apiVersion: v2
+name: nexus-arena
+description: Nexus Arena — Multiplayer Top-Down Arena Shooter
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - game
+  - multiplayer
+  - websocket
+  - arena
+maintainers:
+  - name: Nexus Arena Team
