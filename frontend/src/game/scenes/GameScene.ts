@@ -75,7 +75,7 @@ export class GameScene extends Phaser.Scene {
     b.lineStyle(1, 0xef4444, 0.1); b.strokeRect(20,20,ARENA_WIDTH-40,ARENA_HEIGHT-40); b.setDepth(0);
   }
 
-  update(_time: number, delta: number): void { this.processInput(); this.updateMinimap(); this.interpolateEntities(delta); }
+  update(): void { this.processInput(); this.updateMinimap(); this.interpolateEntities(); }
 
   private processInput(): void {
     const now = Date.now(); if (now - this.lastInputTick < 33) return; this.lastInputTick = now;
@@ -117,7 +117,7 @@ export class GameScene extends Phaser.Scene {
     for (const [id, pu] of this.powerUps) { if (!suIds.has(id)) { pu.destroy(); this.powerUps.delete(id); } }
   }
 
-  private interpolateEntities(_delta: number): void {
+  private interpolateEntities(): void {
     for (const [, pr] of this.projectiles) pr.interpolate();
     for (const [id, p] of this.players) { if (id !== this.socketBridge.userId) p.interpolate(); }
   }

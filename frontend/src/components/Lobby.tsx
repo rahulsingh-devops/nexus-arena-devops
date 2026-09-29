@@ -16,7 +16,7 @@ interface LobbyProps {
 }
 
 const Lobby: React.FC<LobbyProps> = ({ user, onJoinRoom, onLogout }) => {
-  const { connected, emit, on, off } = useSocket();
+  const { connected, on, off } = useSocket();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [newRoomName, setNewRoomName] = useState('');
   const [showCreate, setShowCreate] = useState(false);

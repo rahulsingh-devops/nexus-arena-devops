@@ -81,7 +81,6 @@ export const SocketProvider: React.FC<{ token: string; children: React.ReactNode
     emit,
     on,
     off,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [connected, emit, on, off]);
 
   return (
