@@ -3,7 +3,6 @@ pipeline {
 
     stages {
 
-
         stage('Backend Validation') {
             steps {
                 dir('backend') {
@@ -24,6 +23,18 @@ pipeline {
                     sh 'npm run lint'
                     sh 'npm run build'
                 }
+            }
+        }
+
+        stage('Backend Docker Build') {
+            steps {
+                sh 'docker build -t nexus-arena-backend:ci ./backend'
+            }
+        }
+
+        stage('Frontend Docker Build') {
+            steps {
+                sh 'docker build -t nexus-arena-frontend:ci ./frontend'
             }
         }
 
