@@ -11,6 +11,8 @@ RUN npm run build
 # ---- Stage 2: Run ----
 FROM node:20-alpine AS production
 
+RUN apk upgrade --no-cache 
+
 # Security: non-root user
 RUN addgroup -g 1001 -S nexus && \
     adduser -S nexus -u 1001 -G nexus
@@ -20,7 +22,9 @@ WORKDIR /app
 # Copy only production deps
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/lib/node_modules/corepack \
+           /opt/yarn-v1.22.22
 # Copy built code
 COPY --from=builder /app/dist ./dist
 
