@@ -38,9 +38,22 @@ pipeline {
             }
         }
 
+        stage('Trivy Backend Scan') {
+            steps {
+                sh 'trivy image --severity HIGH,CRITICAL --exit-code 1 nexus-arena-backend:ci'
+            }
+        }
+
+        stage('Trivy Frontend Scan') {
+            steps {
+                sh 'trivy image --severity HIGH,CRITICAL --exit-code 1 nexus-arena-frontend:ci'
+            }
+        }
+
         stage('Docker Check') {
             steps {
                 sh 'docker --version'
+                sh 'trivy --version'
             }
         }
     }

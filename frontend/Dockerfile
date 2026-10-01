@@ -9,7 +9,9 @@ COPY . .
 RUN npm run build
 
 # ---- Stage 2: Serve ----
-FROM nginx:1.27-alpine AS production
+FROM nginx:1.29-alpine AS production
+
+RUN apk upgrade --no-cache
 
 # Copy custom nginx config
 COPY --from=builder /app/dist /usr/share/nginx/html
