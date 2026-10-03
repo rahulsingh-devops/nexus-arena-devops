@@ -50,6 +50,33 @@ pipeline {
             }
         }
 
+        stage('Push Images to ECR') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-nexus-arena'
+                ]]) {
+                    sh '''
+                        aws ecr get-login-password --region ap-south-1 | \
+                        docker login --username AWS --password-stdin \
+                        801651112446.dkr.ecr.ap-south-1.amazonaws.com
+
+                        docker tag nexus-arena-backend:ci \
+                        801651112446.dkr.ecr.ap-south-1.amazonaws.com/nexus-arena-backend:${BUILD_NUMBER}
+
+                        docker tag nexus-arena-frontend:ci \
+                        801651112446.dkr.ecr.ap-south-1.amazonaws.com/nexus-arena-frontend:${BUILD_NUMBER}
+
+                        docker push \
+                        801651112446.dkr.ecr.ap-south-1.amazonaws.com/nexus-arena-backend:${BUILD_NUMBER}
+
+                        docker push \
+                        801651112446.dkr.ecr.ap-south-1.amazonaws.com/nexus-arena-frontend:${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
+
         stage('Docker Check') {
             steps {
                 sh 'docker --version'
@@ -57,4 +84,4 @@ pipeline {
             }
         }
     }
-}
+}       
